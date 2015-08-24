@@ -100,7 +100,7 @@ public class YouTubePlayerView: UIView, UIWebViewDelegate {
         buildWebView(playerParameters())
     }
 
-    required public init(coder aDecoder: NSCoder) {
+    required public init?(coder aDecoder: NSCoder) {
         super.init(coder: aDecoder)
         buildWebView(playerParameters())
     }
@@ -197,9 +197,8 @@ public class YouTubePlayerView: UIView, UIWebViewDelegate {
 
         // Get JSON serialized parameters string
         let jsonParameters = serializedJSON(parameters)!
-
-        // Replace %@ in rawHTMLString with jsonParameters string
-        let htmlString = rawHTMLString.stringByReplacingOccurrencesOfString("%@", withString: jsonParameters, options: nil, range: nil)
+                // Replace %@ in rawHTMLString with jsonParameters string
+        let htmlString = rawHTMLString.stringByReplacingOccurrencesOfString("%@", withString: jsonParameters)
 
         // Load HTML in web view
         webView.loadHTMLString(htmlString, baseURL: NSURL(string: "about:blank"))
@@ -210,19 +209,14 @@ public class YouTubePlayerView: UIView, UIWebViewDelegate {
     }
 
     private func htmlStringWithFilePath(path: String) -> String? {
-
-        // Error optional for error handling
-        var error: NSError?
-
-        // Get HTML string from path
-        let htmlString = NSString(contentsOfFile: path, encoding: NSUTF8StringEncoding, error: &error)
-
-        // Check for error
-        if let error = error {
+        var htmlString: String?
+        do {
+            htmlString = try String(contentsOfFile: path, encoding: NSUTF8StringEncoding)
+        } catch {
             printLog("Lookup error: no HTML file found for path, \(path)")
         }
 
-        return htmlString! as String
+        return htmlString
     }
 
 
@@ -248,21 +242,18 @@ public class YouTubePlayerView: UIView, UIWebViewDelegate {
     }
 
     private func serializedJSON(object: AnyObject) -> String? {
-
-        // Empty error
-        var error: NSError?
-
         // Serialize json into NSData
-        let jsonData = NSJSONSerialization.dataWithJSONObject(object, options: NSJSONWritingOptions.PrettyPrinted, error: &error)
-
-        // Check for error and return nil
-        if let error = error {
+        var jsonString: String?
+        do {
+            let jsonData = try NSJSONSerialization.dataWithJSONObject(object, options: .PrettyPrinted)
+            jsonString = NSString(data: jsonData, encoding: NSUTF8StringEncoding) as? String
+        } catch {
             printLog("Error parsing JSON")
             return nil
         }
 
         // Success, return JSON string
-        return NSString(data: jsonData!, encoding: NSUTF8StringEncoding) as? String
+        return jsonString
     }
 
 
@@ -323,5 +314,5 @@ public class YouTubePlayerView: UIView, UIWebViewDelegate {
 }
 
 private func printLog(str: String) {
-    println("[YouTubePlayer] \(str)")
+   print("[YouTubePlayer] \(str)")
 }
